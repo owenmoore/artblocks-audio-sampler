@@ -1,2 +1,2 @@
 # artblocks-audio-sampler
-Sampling audio from artblocks projects to 
+Sampling audio from Art Blocks projects to WAV files.
