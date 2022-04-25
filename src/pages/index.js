@@ -1,9 +1,10 @@
 import React from 'react'
+import Helmet from 'react-helmet'
 import {Badge, Button, Container, Grid, TextInput, Space, Text, Title, Center} from '@mantine/core'
 import {useInputState} from '@mantine/hooks'
 import {PlayerRecord, PlayerStop} from 'tabler-icons-react'
 import {fetchProject, fetchToken} from '../js/query'
-import Helmet from 'react-helmet'
+import recode from '../js/recode'
 
 async function getArtblockToken(tokenID) {
     tokenID = String(tokenID)
@@ -32,10 +33,10 @@ async function getArtblockToken(tokenID) {
 export default function Index() {
     const [data, setData] = React.useState()
     const [inputValue, setInputValue] = useInputState('')
+    const [hasLoaded, setHasLoaded] = React.useState(false)
     const [isRecording, setIsRecording] = React.useState(false)
 
     const [tokenData, setTokenData] = React.useState()
-    const [projectScript, setProjectScript] = React.useState()
 
     React.useEffect(() => {
         if (data === undefined) return
@@ -47,27 +48,20 @@ export default function Index() {
             tokenId: String(data.token.id),
         }
         setTokenData(`let tokenData = ${JSON.stringify(tokenData)};`)
-    }, [data])
 
-    React.useEffect(() => {
-        if (data === undefined) return
-        if (data.token === undefined || data.token === null) return
-        if (data.project === undefined || data.project === null) return
-        if (tokenData === undefined || tokenData === null) return
+        let script, timeout
 
-        let artwork = String(data.project.script)
-        artwork = artwork.replace(
-            `,s=D.createElement("style");s.innerHTML="body,html{overflow:hidden;background:#333}body{margin:0;display:flex;justify-content:center;align-items:center}C{display:block;background:#000}",B.appendChild(s)`,
-            ``,
-        )
-        artwork = artwork.replace(`C=D.createElement("canvas")`, `C=D.getElementById('canvas')`)
-        artwork = artwork.replace(`,B.appendChild(C)`, ``)
-        artwork = artwork.replace(`let e=W.innerWidth,a=W.innerHeight`, `let e=${500},a=${500}`)
+        timeout = setTimeout(() => {
+            let code = String(data.project.script)
+            code = recode(code, data.project.id)
 
-        const script = document.createElement('script')
-        script.text = artwork
-        document.body.appendChild(script)
+            script = document.createElement('script')
+            script.text = code
+            document.body.appendChild(script)
+        }, 100)
+
         return () => {
+            clearTimeout(timeout)
             document.body.removeChild(script)
         }
     }, [data])
@@ -93,7 +87,7 @@ export default function Index() {
                     Art Blocks Audio Sampler
                 </Title>
                 <Text align="center" size="lg">
-                    Enter your Token ID to load the art, initialize audio by clicking the art, then you can record.
+                    Enter your Token ID and load it, initialize audio by clicking on the art, then start to record.
                 </Text>
                 <Space h="xl" />
                 <Container size={600}>
@@ -104,6 +98,7 @@ export default function Index() {
                                 onChange={setInputValue}
                                 placeholder="296000000"
                                 size="md"
+                                disabled={hasLoaded}
                                 rightSectionWidth={120}
                                 rightSection={
                                     <Badge color="dark" variant="dot">
@@ -115,16 +110,20 @@ export default function Index() {
                         <Grid.Col span={3}>
                             <Button
                                 onClick={() => {
+                                    if (hasLoaded) window.location.reload()
                                     getArtblockToken(inputValue)
                                         .then(data => {
+                                            console.log(data)
                                             setData(data)
+                                            setHasLoaded(true)
                                         })
                                         .catch(error => {
                                             throw new Error(`problem getting token: \n${error}`)
                                         })
                                 }}
+                                color={hasLoaded ? 'red' : 'default'}
                             >
-                                Load Artblock
+                                {!hasLoaded ? 'Load Token' : 'Start Over'}
                             </Button>
                         </Grid.Col>
                     </Grid>
@@ -143,6 +142,7 @@ export default function Index() {
                         color="red"
                         uppercase
                         size="md"
+                        disabled={!hasLoaded}
                         onClick={() => {
                             if (isRecording) stopRecording()
                             else startRecording()
@@ -152,7 +152,7 @@ export default function Index() {
                     </Button>
                 </Center>
                 <Space h="xl" />
-                <Container style={{marginTop: 40}}>
+                <Container style={{marginTop: 20}}>
                     <Grid>
                         <Grid.Col span={3}>
                             Supported projects:
@@ -166,7 +166,7 @@ export default function Index() {
                             <a href="https://github.com/owenmoore/artblocks-audio-sampler/issues/new" target="_blank">
                                 GitHub Issue
                             </a>{' '}
-                            with this information to have it added.
+                            with relevant information to request it.
                         </Grid.Col>
                     </Grid>
                 </Container>
