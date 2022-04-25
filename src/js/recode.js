@@ -1,21 +1,6 @@
 const prepend = `
-const actx  = Tone.context;
-const dest  = actx.createMediaStreamDestination();
-const recorder = new MediaRecorder(dest.stream);
 const audio = document.querySelector('audio');
-const chunks = [];
-
-function downloadAudio(blob){
-    var a = document.createElement("a");
-    document.body.appendChild(a);
-    a.style = "display: none";
-    var url = window.URL.createObjectURL(blob);
-    a.href = url;
-    a.download = 'artblocks-audio-sample.ogg';
-    a.click();
-    window.URL.revokeObjectURL(url);
-    document.body.removeChild(a);
-}
+const recorder = new Tone.Recorder();
 
 function handleMessage(e) {
     switch (e.data['command']) {
@@ -23,21 +8,21 @@ function handleMessage(e) {
             recorder.start();
             break;
         case 'stopRecord':
-            recorder.stop();
+            setTimeout( async () => {
+                const recording = await recorder.stop();
+                const url = URL.createObjectURL(recording);
+                const anchor = document.createElement("a");
+                anchor.download = "recording.webm";
+                anchor.href = url;
+                anchor.click();
+                audio.src = url;
+            }, 100);
             break;
         default:
             break;
     }
 }
 window.addEventListener('message', handleMessage);
-
-recorder.ondataavailable = evt => chunks.push(evt.data);
-
-recorder.onstop = evt => {
-    let blob = new Blob(chunks, {type: 'audio/ogg; codecs=opus' });
-    audio.src = URL.createObjectURL(blob);
-    downloadAudio(blob);
-};
 `
 
 export default (code, id) => {
@@ -51,7 +36,7 @@ export default (code, id) => {
         code = code.replace(`C=D.createElement("canvas")`, `C=D.getElementById('canvas')`)
         code = code.replace(`,B.appendChild(C)`, ``)
         code = code.replace(`let e=W.innerWidth,a=W.innerHeight`, `let e=${500},a=${500}`)
-        code = code.replace(`frv=new Tone.Reverb(15).connect(flw);`, `frv=new Tone.Reverb(15).connect(flw);fwd.connect(dest);`)
+        code = code.replace(`frv=new Tone.Reverb(15).connect(flw);`, `frv=new Tone.Reverb(15).connect(flw);fwd.connect(recorder);`)
     }
     return code
 }

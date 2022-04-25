@@ -5,6 +5,8 @@ Sampling audio from Art Blocks projects to WAV files.
 
 `npm run deploy`
 
+The recording quality is a bit rough, at present it tends to produce "pops" and buzzing sounds. It's likely better to simply sample work on your local machine, but since I got this working I just wanted to release it anyways in case anyone knows how to improve it. At present it will remain public code, but not hosted.
+
 ## Supported Projects
 
 The following projects are supported.
