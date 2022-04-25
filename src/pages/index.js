@@ -35,8 +35,9 @@ export default function Index() {
     const [inputValue, setInputValue] = useInputState('')
     const [hasLoaded, setHasLoaded] = React.useState(false)
     const [isRecording, setIsRecording] = React.useState(false)
-
     const [tokenData, setTokenData] = React.useState()
+
+    const audioRef = React.useRef(null)
 
     React.useEffect(() => {
         if (data === undefined) return
@@ -67,10 +68,12 @@ export default function Index() {
     }, [data])
 
     const startRecording = () => {
+        window.postMessage({command: 'startRecord'}, '*')
         setIsRecording(true)
     }
 
     const stopRecording = () => {
+        window.postMessage({command: 'stopRecord'}, '*')
         setIsRecording(false)
     }
 
@@ -113,7 +116,6 @@ export default function Index() {
                                     if (hasLoaded) window.location.reload()
                                     getArtblockToken(inputValue)
                                         .then(data => {
-                                            console.log(data)
                                             setData(data)
                                             setHasLoaded(true)
                                         })
@@ -121,7 +123,6 @@ export default function Index() {
                                             throw new Error(`problem getting token: \n${error}`)
                                         })
                                 }}
-                                color={hasLoaded ? 'red' : 'default'}
                             >
                                 {!hasLoaded ? 'Load Token' : 'Start Over'}
                             </Button>
@@ -137,9 +138,9 @@ export default function Index() {
                 <Space h="xl" />
                 <Center>
                     <Button
-                        variant={isRecording ? 'filled' : 'outline'}
+                        variant="filled"
                         rightIcon={isRecording ? <PlayerRecord /> : <PlayerStop />}
-                        color="red"
+                        color={!isRecording ? 'green' : 'red'}
                         uppercase
                         size="md"
                         disabled={!hasLoaded}
@@ -147,10 +148,13 @@ export default function Index() {
                             if (isRecording) stopRecording()
                             else startRecording()
                         }}
+                        style={{marginRight: 20}}
                     >
                         {!isRecording ? 'Start' : 'Stop'}
                     </Button>
+                    <audio controls ref={audioRef}></audio>
                 </Center>
+
                 <Space h="xl" />
                 <Container style={{marginTop: 20}}>
                     <Grid>
